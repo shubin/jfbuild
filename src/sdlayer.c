@@ -34,6 +34,10 @@ int startwin_idle(void *s) { return 0; }
 int startwin_settitle(const char *s) { s=s; return 0; }
 #endif
 
+#if MEGAWANG
+#include "megawang.h"
+#endif
+
 #define SURFACE_FLAGS	(SDL_SWSURFACE|SDL_HWPALETTE|SDL_HWACCEL)
 
 // undefine to restrict windowed resolutions to conventional sizes
@@ -151,6 +155,12 @@ void wm_setapptitle(char *name)
 int main(int argc, char *argv[])
 {
 	int r;
+    
+#if MEGAWANG
+    if ((r = Sys_Init(argc, argv)) != 0) {
+        return r;
+    }
+#endif
 	
 	buildkeytranslationtable();
 	
@@ -536,6 +546,12 @@ void releaseallbuttons(void)
 //
 //
 
+#if MEGAWANG
+
+#define SDL_GetTicks() Sys_GetTicks()
+
+#endif
+
 static Uint32 timerfreq=0;
 static Uint32 timerlastsample=0;
 static Uint32 timerticspersec=0;
@@ -549,6 +565,10 @@ int inittimer(int tickspersecond)
 	if (timerfreq) return 0;	// already installed
 
 	initprintf("Initialising timer\n");
+    
+#if MEGAWANG
+    Sys_InitTimer();
+#endif
 
 	timerfreq = 1000;
 	timerticspersec = tickspersecond;
@@ -565,6 +585,10 @@ int inittimer(int tickspersecond)
 void uninittimer(void)
 {
 	if (!timerfreq) return;
+    
+#if MEGAWANG
+    Sys_UninitTimer();
+#endif
 
 	timerfreq=0;
 }
@@ -699,6 +723,9 @@ void getvalidmodes(void)
 #ifdef USE_OPENGL
 		if (nogl && cdepths[j] > 8) continue;
 #endif
+#if MEGAWANG
+        if (cdepths[j] < 24) continue;
+#endif
 		pf.BitsPerPixel = cdepths[j];
 		pf.BytesPerPixel = cdepths[j] >> 3;
 
@@ -764,7 +791,11 @@ int checkvideomode(int *x, int *y, int c, int fs, int forced)
 	    && nogl
 #endif
 	   ) return -1;
-
+#if MEGAWANG
+    if (c < 24) {
+        return -1;
+    }
+#endif
 	// fix up the passed resolution values to be multiples of 8
 	// and at least 320x200 or at most MAXXDIMxMAXYDIM
 	if (*x < 320) *x = 320;
