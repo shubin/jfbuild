@@ -50,7 +50,11 @@ extern long app_main(long argc, char *argv[]);
 char quitevent=0, appactive=1;
 
 // video
+#if MEGAWANG
+SDL_Surface *sdl_surface;
+#else
 static SDL_Surface *sdl_surface;
+#endif
 long xres=-1, yres=-1, bpp=0, fullscreen=0, bytesperline, imageSize;
 long frameplace=0, lockcount=0;
 char modechange=1;
@@ -911,6 +915,10 @@ int setvideomode(int x, int y, int c, int fs)
 				SDL_GL_SetAttribute(attributes[i].attr, j);
 			}
 
+#if MEGAWANG && defined(DEBUG)
+            fs = 0;
+#endif
+
 			sdl_surface = SDL_SetVideoMode(x, y, c, SDL_OPENGL | ((fs&1)?SDL_FULLSCREEN:0));
 			if (!sdl_surface) {
 				if (multisamplecheck) {
@@ -1112,6 +1120,10 @@ void showframe(int w)
 			bglMatrixMode(GL_PROJECTION);
 			bglPopMatrix();
 		}
+        
+#if MEGAWANG
+        GUI_Render();
+#endif
 
 		SDL_GL_SwapBuffers();
 		return;
@@ -1231,6 +1243,12 @@ int handleevents(void)
 }
 
 	while (SDL_PollEvent(&ev)) {
+#if MEGAWANG
+        if (GUI_InjectEvent(&ev)) {
+			/* GUI ate the event, don't let it pass through */
+			continue;
+		}
+#endif
 		switch (ev.type) {
 			case SDL_KEYDOWN:
 			case SDL_KEYUP:
